@@ -3,13 +3,17 @@ import os
 import string
 import sys
 import wx
+import fnmatch
+import re
 from wax.treeview import TreeView
 from wax.imagelist import ImageList
 
 class ShowAllFileTreeView(TreeView):
-    def __init__(self, parent, rootdir="/"):
+    def __init__(self, parent, rootdir="/", exclude=None):
         TreeView.__init__(self, parent)
         self.rootdir = rootdir
+        exclude = exclude or []
+        self.exclude = re.compile(r'|'.join(["(%s)" % fnmatch.translate(g) for g in exclude]))
 
         imagelist = ImageList(16, 16)
         imagelist.Add(wx.ArtProvider_GetBitmap(wx.ART_FOLDER, wx.ART_OTHER, (16,16)), 'folder')
@@ -70,7 +74,7 @@ class ShowAllFileTreeView(TreeView):
 
     def GetChildren(self, path):
         files = os.listdir(path)
-        files = [(f, os.path.join(path, f), os.path.isdir(os.path.join(path, f))) for f in files]
+        files = [(f, os.path.join(path, f), os.path.isdir(os.path.join(path, f))) for f in files if not self.exclude.match(f)]
         return sorted(files, key=lambda x:(-x[2], x[0]))
 
     def OnItemActivated(self, event):

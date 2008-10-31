@@ -2,12 +2,13 @@ from wax import *
 from spax.widgets.menus import SpaxMenuBar
 from spax.widgets.notebook import SpaxNoteBook
 from spax.widgets.filetreeview import ShowAllFileTreeView
+from spax import settings
 
 class MainFrame(Frame):
 	def Body(self):
 		self.SetMenuBar(SpaxMenuBar(self))
 		self.splitter = Splitter(self)
-		self.treeview = ShowAllFileTreeView(self.splitter)
+		self.treeview = ShowAllFileTreeView(self.splitter, exclude=settings.TREEVIEW_HIDE_FILES)
 		self.notebook = SpaxNoteBook(self.splitter)
 		self.splitter.Split(self.treeview, self.notebook, direction='v', sashposition=200, minsize=100)
 		self.AddComponent(self.splitter, expand='both')
