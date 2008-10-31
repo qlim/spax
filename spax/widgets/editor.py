@@ -25,7 +25,10 @@ class Editor(StyledTextBox):
         ext = os.path.splitext(self.filename)[1]
         filetype = FILE_TYPES.get(ext, 'default')
         self.syntax = getattr(spax.syntax, filetype)
-        self.SetLanguage(filetype)
+        try:
+            self.SetLanguage(filetype)
+        except KeyError:
+            pass
         self.StyleClearAll()
         for name, style in self.syntax.styles.items():
             self.SetStyle(name, style)

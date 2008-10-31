@@ -73,12 +73,19 @@ class ShowAllFileTreeView(TreeView):
             self.SetImages(child, isdir)
 
     def GetChildren(self, path):
+        if not os.path.isdir(path):
+            return []
         files = os.listdir(path)
         files = [(f, os.path.join(path, f), os.path.isdir(os.path.join(path, f))) for f in files if not self.exclude.match(f)]
         return sorted(files, key=lambda x:(-x[2], x[0]))
 
     def OnItemActivated(self, event):
-        print dir(event), event.GetEventObject()
+        tree = event.GetEventObject()
+        treeitem = tree.GetSelection()
+        filepath = tree.GetItemData(treeitem).GetData()
+        if os.path.isdir(filepath):
+            return
+        self.Parent.Parent.openFile(filepath)
 
     def OnSelectionChanged(self, event):
         node = event.GetItem()

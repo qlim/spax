@@ -22,15 +22,17 @@ class MainFrame(Frame):
 	def newFile(self, event=None):
 		self.notebook.newFile()
 
-	def openFile(self, event=None):
-		try:
-			dlg = FileDialog(self, open=True)
-			result = dlg.ShowModal()
-			if result == 'ok':
+	def openFile(self, filename=None, event=None):
+		if not filename:
+			try:
+				dlg = FileDialog(self, open=True)
+				result = dlg.ShowModal()
+				if result != 'ok':
+					return
 				filename = dlg.GetPaths()[0]
-				self.notebook.openFile(filename)
-		finally:
-			dlg.Destroy()
+			finally:
+				dlg.Destroy()
+		self.notebook.openFile(filename)
 	
 	def closeFile(self, event=None):
 		idx = self.notebook.GetSelection()
