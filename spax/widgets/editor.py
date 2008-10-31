@@ -4,6 +4,7 @@ import wx
 import os
 import string
 import re
+import md5
 
 FIXED_FONT = ('Monospace', 10)
 INDENTATION_RE = re.compile(r'^[ \t]*')
@@ -14,9 +15,17 @@ class Editor(StyledTextBox):
         super(Editor, self).__init__(*args, **kwargs)
         self.filename = None
         self.changed = False
+        self.setHash('')
 	self.SetFont(FIXED_FONT)
     
-    def _setChanged(self, hasChanged):
+    def setHash(self, data=None):
+        if data is None:
+            data = self.GetData()
+        self.hash = md5.new(data).hexdigest()
+    
+    def checkChanged(self):
+        hash = md5.new(self.GetText()).hexdigest()
+        hasChanged = hash != self.hash
         if hasChanged != self.changed:
             idx = self.Parent.GetSelection()
             name = self.filename and os.path.split(self.filename)[1] or '[noname]'
@@ -32,8 +41,9 @@ class Editor(StyledTextBox):
         self.ClearAll()
         self.AddText(data)
         self.filename = filename
-        self._setChanged(False)
         self.SetReadOnly(readonly)
+        self.setHash(data)
+        self.checkChanged()
         self.SendMsg(stc.wxSTC_CMD_DOCUMENTSTART)
 
     def save(self):
@@ -58,7 +68,8 @@ class Editor(StyledTextBox):
         f = open(filename, "wb")
         f.write(data)
         f.close()
-        self._setChanged(False)
+        self.setHash(data)
+        self.checkChanged()
 
     ###
     ### indentation
@@ -84,7 +95,7 @@ class Editor(StyledTextBox):
         elif keycode == keys.pagedown and event.ControlDown():
             self.CursorDocumentEnd()
         else:
-            self._setChanged(True)
+            self.checkChanged()
             event.Skip()
 
     def GetCurrentLineNo(self):
