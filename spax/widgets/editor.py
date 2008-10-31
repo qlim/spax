@@ -5,6 +5,7 @@ import os
 import string
 import re
 import md5
+import spax.syntax
 
 FIXED_FONT = ('Monospace', 10)
 INDENTATION_RE = re.compile(r'^[ \t]*')
@@ -16,7 +17,22 @@ class Editor(StyledTextBox):
         self.filename = None
         self.changed = False
         self.setHash('')
+        self.syntax = spax.syntax.default
 	self.SetFont(FIXED_FONT)
+    
+    def updateSyntax(self):
+        from spax.settings import FILE_TYPES
+        ext = os.path.splitext(self.filename)[1]
+        filetype = FILE_TYPES.get(ext, 'default')
+        self.syntax = getattr(spax.syntax, filetype)
+        self.SetLanguage(filetype)
+        self.StyleClearAll()
+        for name, style in self.syntax.styles.items():
+            self.SetStyle(name, style)
+        self.SetKeyWords(0, string.join(self.syntax.keyword_list))
+        self.SetUseTabs(not self.syntax.TAB_TO_SPACE)
+        self.SetTabWidth(self.syntax.TAB_WIDTH)
+        self.SetIndent(self.syntax.TAB_WIDTH)
     
     def setHash(self, data=None):
         if data is None:
@@ -41,6 +57,7 @@ class Editor(StyledTextBox):
         self.ClearAll()
         self.AddText(data)
         self.filename = filename
+        self.updateSyntax()
         self.SetReadOnly(readonly)
         self.setHash(data)
         self.checkChanged()
@@ -60,6 +77,7 @@ class Editor(StyledTextBox):
                 filename = dlg.GetPaths()[0]
                 self.filename = filename
                 self._save(filename)
+                self.updateSyntax()
         finally:
             dlg.Destroy()
 

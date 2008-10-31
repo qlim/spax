@@ -4,6 +4,7 @@ import keyword
 TAB_WIDTH = 4
 TAB_TO_SPACE = True
 
+keyword_list = keyword.kwlist
 styles = {
-	'keyword': ("|".join(["(%s)" % kw for kw in keyword.kwlist]), {'bold': True})
+	'keyword': 'fore:#000088,bold'
 }
