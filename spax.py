@@ -38,6 +38,40 @@ class MainFrame(Frame):
 		idx = self.notebook.GetSelection()
 		self.notebook.closeFile(idx)
 
+	def promptToSave(self, editor=None):
+		from spax.widgets.dialog import PromptSaveDialog
+		choices = []
+		if not editor:
+			for i in range(self.notebook.GetPageCount()):
+				e = self.notebook.GetPage(i)
+				if e.changed:
+					choices.append((e.filename or '[noname]', i))
+		else:
+			choices = [(editor.filename or '[noname]', self.notebook.GetPageIndex(editor))]
+
+		if choices:
+			dialog = None
+			try:
+				print "fop"
+				dialog = PromptSaveDialog(self, choices=choices)
+				save = dialog.ShowModal()
+				if save == 'yes':
+					indexes = dialog.getCheckedFiles()
+					for i in indexes:
+						editor = self.notebook.GetPage(i)
+						if not editor.filename:
+							self.notebook.SetSelection(i)
+							self.notebook.GetCurrentPage().SetFocus()
+						result = editor.save()
+						if result == 'cancel':
+							return 'cancel'
+			finally:
+				if dialog:
+					dialog.Destroy()
+			return 'yes'
+		else:
+			return 'no'
+
 	def saveFile(self, event=None):
 		editor = self.notebook.get_current_page()
 		editor.save()
@@ -45,9 +79,14 @@ class MainFrame(Frame):
 	def saveFileAs(self, event=None):
 		editor = self.notebook.get_current_page()
 		editor.saveAs()
+
+	def OnClose(self, event=None):
+		save = self.promptToSave()
+		if save != 'cancel':
+		        self.Destroy()
 	
 	def exit(self, event=None):
-		self.Close()
+		self.Close(1)
 
 app = Application(MainFrame, title='Spax', direction='vertical')
 app.Run()

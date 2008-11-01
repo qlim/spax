@@ -46,7 +46,7 @@ class Editor(StyledTextBox):
         hash = md5.new(self.GetText()).hexdigest()
         hasChanged = hash != self.hash
         if hasChanged != self.changed:
-            idx = self.Parent.GetSelection()
+            idx = self.Parent.GetPageIndex(self)
             name = self.filename and os.path.split(self.filename)[1] or '[noname]'
             if hasChanged:
                 name += ' *'
@@ -70,10 +70,13 @@ class Editor(StyledTextBox):
         if self.filename:
             self._save(self.filename)
         else:
-            self.saveAs()
+            result = self.saveAs()
+            if result == 'cancel':
+                return result
 
     def saveAs(self):
         dlg = FileDialog(self, save=True)
+        result = 'cancel'
         try:
             result = dlg.ShowModal()
             if result == 'ok':
@@ -83,6 +86,7 @@ class Editor(StyledTextBox):
                 self.updateSyntax()
         finally:
             dlg.Destroy()
+        return result
 
     def _save(self, filename):
         data = self.GetText()

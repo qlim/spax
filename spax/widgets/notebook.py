@@ -12,6 +12,11 @@ class SpaxNoteBook(NoteBook):
         filedrop = FileDropTarget(self, self.OnDropFiles)
         self.SetDropTarget(filedrop)
 
+    def GetPageIndex(self, page):
+        for i in range(self.GetPageCount()):
+            if self.GetPage(i) == page:
+                return i
+
     def AddPage(self, win, *args, **kwargs):
         super(SpaxNoteBook, self).AddPage(win, *args, **kwargs)
         win.SetFocus()
@@ -27,6 +32,12 @@ class SpaxNoteBook(NoteBook):
             self.closeFile(old_id)
 
     def closeFile(self, idx):
+        editor = self.GetPage(idx)
+        save = 'no'
+        if editor.changed:
+            save = self.Parent.Parent.promptToSave(editor)
+        if save == 'cancel':
+            return
         self.DeletePage(idx)
         if self.GetPageCount() == 0:
             self.newFile()
