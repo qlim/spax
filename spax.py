@@ -4,11 +4,16 @@ from spax.widgets.notebook import SpaxNoteBook
 from spax.widgets.filetreeview import ShowAllFileTreeView
 from spax import settings
 
+import os
+
 class MainFrame(Frame):
 	def Body(self):
 		self.SetMenuBar(SpaxMenuBar(self))
 		self.splitter = Splitter(self)
-		self.treeview = ShowAllFileTreeView(self.splitter, exclude=settings.TREEVIEW_HIDE_FILES)
+		rootdir = getattr(settings, 'TREEVIEW_ROOT', '/')
+		if not (os.path.exists(rootdir) and os.path.isdir(rootdir)):
+			rootdir = '/'
+		self.treeview = ShowAllFileTreeView(self.splitter, rootdir=rootdir, exclude=settings.TREEVIEW_HIDE_FILES)
 		self.notebook = SpaxNoteBook(self.splitter)
 		self.splitter.Split(self.treeview, self.notebook, direction='v', sashposition=200, minsize=100)
 		self.AddComponent(self.splitter, expand='both')
@@ -52,7 +57,6 @@ class MainFrame(Frame):
 		if choices:
 			dialog = None
 			try:
-				print "fop"
 				dialog = PromptSaveDialog(self, choices=choices)
 				save = dialog.ShowModal()
 				if save == 'yes':
