@@ -2,8 +2,10 @@ from wax import *
 from spax.widgets.menus import SpaxMenuBar
 from spax.widgets.notebook import SpaxNoteBook
 from spax.widgets.filetreeview import ShowAllFileTreeView
+from spax.utils import regexFromSearchString
 from spax import settings
 
+import re
 import os
 
 class MainFrame(Frame):
@@ -17,12 +19,38 @@ class MainFrame(Frame):
 		self.notebook = SpaxNoteBook(self.splitter)
 		self.splitter.Split(self.treeview, self.notebook, direction='v', sashposition=200, minsize=100)
 		self.AddComponent(self.splitter, expand='both')
+		self.findPanel = FindPanel(self, size=(-1,28))
+		self.AddComponent(self.findPanel, expand='h')
+		self.findPanel.Hide()
 		self.Pack()
 		self.Size = (800, 600)
 		self.newFile()
 
 	def getEditor(self):
 		return self.notebook.get_current_page()
+
+	def focusFind(self):
+		if not self.findPanel.IsShown():
+			self.findPanel.Show()
+			self.Layout()
+		self.findPanel.findTextBox.SetFocus()
+	
+	def closeFind(self):
+		self.findPanel.Hide()
+		self.Layout()
+
+	def findNextInCurrentFile(self, value, wrap=True):
+		regex = regexFromSearchString(value)
+		editor = self.getEditor()
+		text = editor.GetText()
+		pos = editor.GetCurrentPos()
+
+		match = regex.search(text, pos, editor.GetTextLength())
+		if wrap and not match:
+			match = regex.search(text, 0, pos)
+		if not match:
+			return
+		editor.SetSelection(match.start(), match.end())
 	
 	def newFile(self, event=None):
 		self.notebook.newFile()
@@ -91,6 +119,31 @@ class MainFrame(Frame):
 	
 	def exit(self, event=None):
 		self.Close(1)
+
+class FindPanel(Panel):
+	def Body(self):
+		panel = Panel(self)
+		self.findTextBox = TextBox(panel, size=(300,25))
+		panel.AddComponent(Label(panel, 'Find:', size=(60,25)), border=5)
+		panel.AddComponent(self.findTextBox, border=5)
+		self.findButton = Button(panel, 'Find', size=(60,25), event=self.onClickFind)
+		panel.AddComponent(self.findButton, border=5)
+		self.AddComponent(panel, expand='h')
+		panel.Pack()
+		#self.moreButton = Button(self, '(more)', size=(60,25), event=self.onClickMore)
+		#self.AddComponent(self.moreButton, border=5)
+		self.Pack()
+	
+	def OnKeyUp(self, event=None):
+		if event.KeyCode == keys.esc:
+			event.Skip()
+			self.Parent.closeFind()
+
+	def onClickFind(self, event=None):
+		self.Parent.findNextInCurrentFile(self.findTextBox.GetValue())
+
+	def onClickMore(self, event=None):
+		pass
 
 app = Application(MainFrame, title='Spax', direction='vertical')
 app.Run()

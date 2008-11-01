@@ -26,6 +26,7 @@ class EditMenu(Menu):
 		self.Append('C&ut', self.onCut, hotkey='Ctrl-X')
 		self.Append('&Paste', self.onPaste, hotkey='Ctrl-V')
 		self.Append('&Select All', self.onSelectAll, hotkey='Ctrl-A')
+		self.Append('&Find/replace', self.onFind, hotkey='Ctrl-F')
 		
 	def onUndo(self, event=None):
 		self.parent.getEditor().Undo()
@@ -44,4 +45,7 @@ class EditMenu(Menu):
 	
 	def onSelectAll(self, event=None):
 		self.parent.getEditor().SelectAll()
+
+	def onFind(self, event=None):
+		self.parent.focusFind()
 	
