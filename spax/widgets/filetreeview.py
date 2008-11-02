@@ -7,12 +7,21 @@ import fnmatch
 import re
 from wax.treeview import TreeView
 from wax.imagelist import ImageList
+from wax import Menu
+
+class ContextMenu(Menu):
+    def __init__(self, *args, **kwargs):
+        super(ContextMenu, self).__init__(*args, **kwargs)
+
+        self.Append('&Reset root directory', self.parent.OnResetRoot)
+        self.Append('&Set directory as root', self.parent.OnSetRoot)
 
 class ShowAllFileTreeView(TreeView):
     #add double-click event to expand nodes
     __events__ = TreeView.__events__
     __events__.update({
         'DoubleClick': wx.EVT_LEFT_DCLICK,
+        'RightClick': wx.EVT_RIGHT_DOWN,
     })
 
     def __init__(self, parent, rootdir="/", exclude=None):
@@ -41,7 +50,7 @@ class ShowAllFileTreeView(TreeView):
             For Windows, however, we have to get the available drive letters. """
         self.Clear()
         text = os.path.split(self.rootdir[-1:] == '/' and self.rootdir[:-1] or self.rootdir)[1]
-        self.root = self.AddRoot(text)
+        self.root = self.AddRoot(self.rootdir)
         self.SetItemPyData(self.root, self.rootdir)
         self.SetImages(self.root, True)
 
@@ -85,6 +94,36 @@ class ShowAllFileTreeView(TreeView):
             except os.error:
                 #most likely permission denied, thats ok.
                 pass
+
+    def OnRightClick(self, event):
+        pos = event.GetPosition()
+        item, where = self.HitTest(pos)
+        if where & wx.TREE_HITTEST_NOWHERE:
+            return
+        self.SelectItem(item)
+
+        filepath = self.GetItemData(item).GetData()
+        if not os.path.isdir(filepath):
+            return
+
+        d = self.GetItemData(item).GetData()
+        if (d == '/'):
+            return
+        else:
+            menu = ContextMenu(self)
+
+        self.selected = item
+
+        self.PopupMenu(menu, event.GetPosition())
+        menu.Destroy()
+
+    def OnSetRoot(self, event):
+        self.rootdir = self.GetItemData(self.selected).GetData()
+        self.MakeRoot()
+
+    def OnResetRoot(self, event):
+        self.rootdir = '/'
+        self.MakeRoot()
 
     def OnDoubleClick(self, event):
         pos = event.GetPosition()
