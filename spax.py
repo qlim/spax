@@ -64,6 +64,8 @@ class MainFrame(Frame):
 		match = self.findNextInCurrentFile(find, wrap, isRegex, matchCase)
 		if match:
 			editor = self.getEditor()
+			if isRegex:
+				replace = match.expand(replace)
 			editor.Replace(match.start(), match.end(), replace)
 			editor.SetSelection(match.start(), match.start() + len(replace))
 	
