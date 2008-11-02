@@ -9,6 +9,11 @@ from wax.treeview import TreeView
 from wax.imagelist import ImageList
 from wax import Menu
 
+from spax.prefs import prefs
+
+PREF_TREE = 'tree'
+PREF_TREE_ROOT = 'root'
+
 class ContextMenu(Menu):
     def __init__(self, *args, **kwargs):
         super(ContextMenu, self).__init__(*args, **kwargs)
@@ -24,9 +29,9 @@ class ShowAllFileTreeView(TreeView):
         'RightClick': wx.EVT_RIGHT_DOWN,
     })
 
-    def __init__(self, parent, rootdir="/", exclude=None):
+    def __init__(self, parent, rootdir=None, exclude=None):
         TreeView.__init__(self, parent)
-        self.rootdir = rootdir
+        self.rootdir = prefs.get(PREF_TREE, PREF_TREE_ROOT, '/')
         exclude = exclude or []
         self.exclude = re.compile(r'|'.join(["(%s)" % fnmatch.translate(g) for g in exclude]))
 
@@ -118,11 +123,14 @@ class ShowAllFileTreeView(TreeView):
         menu.Destroy()
 
     def OnSetRoot(self, event):
-        self.rootdir = self.GetItemData(self.selected).GetData()
-        self.MakeRoot()
+        self.SetRoot(self.GetItemData(self.selected).GetData())
 
     def OnResetRoot(self, event):
-        self.rootdir = '/'
+        self.SetRoot('/')
+        
+    def SetRoot(self, path):
+        self.rootdir = path
+        prefs.set(PREF_TREE, PREF_TREE_ROOT, path)
         self.MakeRoot()
 
     def OnDoubleClick(self, event):
