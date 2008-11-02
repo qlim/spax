@@ -10,7 +10,7 @@ class FileMenu(Menu):
 	def __init__(self, *args, **kwargs):
 		super(FileMenu, self).__init__(*args, **kwargs)
 		self.Append('&New file', self.parent.newFile, 'Create a new file', hotkey='Ctrl-N')
-		self.Append("&Open", self.parent.openFile, "Open a file", hotkey='Ctrl-O')
+		self.Append("&Open", self.parent.open, "Open a file", hotkey='Ctrl-O')
 		self.Append("&Close", self.parent.closeFile, "Close a file", hotkey='Ctrl-F4')
 		self.Append("&Save", self.parent.saveFile, "Save file", hotkey='Ctrl-S')
 		self.Append("Save &As", self.parent.saveFileAs, "Save file under a different name")

@@ -7,6 +7,7 @@ from spax import settings
 
 import re
 import os
+import wx
 
 class MainFrame(Frame):
 	def Body(self):
@@ -19,7 +20,7 @@ class MainFrame(Frame):
 		self.notebook = SpaxNoteBook(self.splitter)
 		self.splitter.Split(self.treeview, self.notebook, direction='v', sashposition=200, minsize=100)
 		self.AddComponent(self.splitter, expand='both')
-		self.findPanel = FindPanel(self, size=(-1,28))
+		self.findPanel = FindPanel(self, direction='v', expanded=True)
 		self.AddComponent(self.findPanel, expand='h')
 		self.findPanel.Hide()
 		self.Pack()
@@ -34,13 +35,19 @@ class MainFrame(Frame):
 			self.findPanel.Show()
 			self.Layout()
 		self.findPanel.findTextBox.SetFocus()
-	
+
 	def closeFind(self):
 		self.findPanel.Hide()
 		self.Layout()
 
-	def findNextInCurrentFile(self, value, wrap=True):
-		regex = regexFromSearchString(value)
+	def findNextInCurrentFile(self, value, wrap=True, isRegex=False, matchCase=False):
+		flags = re.M
+		if not matchCase:
+			flags |= re.I
+		if isRegex:
+			regex = re.compile(value, flags)
+		else:
+			regex = regexFromSearchString(value, flags)
 		editor = self.getEditor()
 		text = editor.GetText()
 		pos = editor.GetCurrentPos()
@@ -51,11 +58,22 @@ class MainFrame(Frame):
 		if not match:
 			return
 		editor.SetSelection(match.start(), match.end())
+		return match
+	
+	def replaceNextInCurrentFile(self, find, replace, wrap=True, isRegex=False, matchCase=False):
+		match = self.findNextInCurrentFile(find, wrap, isRegex, matchCase)
+		if match:
+			editor = self.getEditor()
+			editor.Replace(match.start(), match.end(), replace)
+			editor.SetSelection(match.start(), match.start() + len(replace))
 	
 	def newFile(self, event=None):
 		self.notebook.newFile()
 
-	def openFile(self, filename=None, event=None):
+	def open(self, event=None):
+		self.openFile()
+
+	def openFile(self, filename=None):
 		if not filename:
 			try:
 				dlg = FileDialog(self, open=True)
@@ -121,29 +139,100 @@ class MainFrame(Frame):
 		self.Close(1)
 
 class FindPanel(Panel):
+	def __init__(self, *args, **kwargs):
+		self._expanded = kwargs.pop('expanded', False)
+		super(FindPanel, self).__init__(*args, **kwargs)
+
 	def Body(self):
-		panel = Panel(self)
-		self.findTextBox = TextBox(panel, size=(300,25))
-		panel.AddComponent(Label(panel, 'Find:', size=(60,25)), border=5)
-		panel.AddComponent(self.findTextBox, border=5)
-		self.findButton = Button(panel, 'Find', size=(60,25), event=self.onClickFind)
-		panel.AddComponent(self.findButton, border=5)
-		self.AddComponent(panel, expand='h')
-		panel.Pack()
-		#self.moreButton = Button(self, '(more)', size=(60,25), event=self.onClickMore)
-		#self.AddComponent(self.moreButton, border=5)
+		self.topPanel = Panel(self, direction='h')
+		self.bottomPanel = Panel(self, direction='h')
+		
+		self.replacePanel = Panel(self.topPanel, direction='h')
+		self.replaceLabel = Label(self.replacePanel, 'Replace with:')
+		self.replaceTextBox = TextBox(self.replacePanel, size=(-1,25))
+		self.replaceButton = Button(self.replacePanel, 'Find/Replace', size=(60, 25), event=self.onClickReplace)
+		self.replacePanel.AddComponent(self.replaceLabel, border=5)
+		self.replacePanel.AddComponent(self.replaceTextBox, border=5, expand='h')
+		self.replacePanel.AddComponent(self.replaceButton, border=5)
+		self.replacePanel.Pack()
+		self.replacePanel.Show(self._expanded)
+
+		self.findTextBox = TextBox(self.topPanel, size=(-1,25))
+		self.findButton = Button(self.topPanel, 'Find', size=(60,25), event=self.onClickFind)
+		self.isRegexCheckBox1 = CheckBox(self.topPanel, 'Regular expression')
+		self.isRegexCheckBox1.Hide()
+		self.topPanel.AddComponent(self.findTextBox, border=5, expand='h')
+		self.topPanel.AddComponent(self.findButton, border=5)
+		self.topPanel.AddComponent(self.isRegexCheckBox1, border=5)
+		self.topPanel.AddComponent(self.replacePanel, expand='h')
+		self.moreButton = Button(self.topPanel, self._expanded and '(less)' or '(more)', size=(60,25), event=self.onClickMore)
+		self.moreButton.Hide()
+		self.topPanel.AddComponent(self.moreButton, border=5)
+		self.topPanel.Pack()
+
+		self.isRegexCheckBox2 = CheckBox(self.bottomPanel, 'Regular expression')
+		self.matchCaseCheckBox = CheckBox(self.bottomPanel, 'Match case')
+		#self.backwardsCheckBox = CheckBox(self.bottomPanel, 'Backwards')
+		self.wrapCheckBox = CheckBox(self.bottomPanel, 'Wrap search')
+		self.wrapCheckBox.SetValue(True)
+		self.bottomPanel.AddComponent(self.isRegexCheckBox2, expand='both')
+		self.bottomPanel.AddComponent(self.matchCaseCheckBox, expand='both')
+		#self.bottomPanel.AddComponent(self.backwardsCheckBox, expand='both')
+		self.bottomPanel.AddComponent(self.wrapCheckBox, expand='both')
+		self.bottomPanel.Pack()
+		self.bottomPanel.Show(self._expanded)
+
+		self.AddComponent(self.topPanel, expand='h')
+		self.AddComponent(self.bottomPanel, expand='h')
 		self.Pack()
+
+	def expandPanel(self, expand=True):
+		if self._expanded == expand:
+			return
+		self.moreButton.SetLabel(expand and '(less)' or '(more)')
+		old, new = expand and (self.isRegexCheckBox1, self.isRegexCheckBox2) or (self.isRegexCheckBox2, self.isRegexCheckBox1)
+		new.SetValue(old.IsChecked())
+		old.Hide()
+		new.Show()
+
+		self.replacePanel.Show(expand)
+		self.bottomPanel.Show(expand)
+		self.Layout()
+		self._expanded = expand
+
+	def isRegex(self):
+		return (self._expanded and self.isRegexCheckBox2 or self.isRegexCheckBox1).IsChecked()
 	
 	def OnKeyUp(self, event=None):
 		if event.KeyCode == keys.esc:
 			event.Skip()
 			self.Parent.closeFind()
+	
+	def findNextInCurrentFile(self):
+		return self.Parent.findNextInCurrentFile(
+			self.findTextBox.GetValue(), 
+			isRegex=self.isRegex(), 
+			wrap=self.wrapCheckBox.GetValue(), 
+			matchCase=self.matchCaseCheckBox.GetValue()
+		)
+	
+	def replaceNextInCurrentFile(self):
+		return self.Parent.replaceNextInCurrentFile(
+			self.findTextBox.GetValue(),
+			self.replaceTextBox.GetValue(),
+			isRegex=self.isRegex(), 
+			wrap=self.wrapCheckBox.GetValue(), 
+			matchCase=self.matchCaseCheckBox.GetValue()
+		)
 
 	def onClickFind(self, event=None):
-		self.Parent.findNextInCurrentFile(self.findTextBox.GetValue())
+		self.findNextInCurrentFile()
+
+	def onClickReplace(self, event=None):
+		self.replaceNextInCurrentFile()
 
 	def onClickMore(self, event=None):
-		pass
+		self.expandPanel(not self._expanded)
 
 app = Application(MainFrame, title='Spax', direction='vertical')
 app.Run()

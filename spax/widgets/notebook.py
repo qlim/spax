@@ -22,6 +22,11 @@ class SpaxNoteBook(NoteBook):
         win.SetFocus()
 
     def openFile(self, filename):
+        for i in range(self.GetPageCount()):
+            editor = self.GetPage(i)
+            if editor.filename == filename:
+                self.SetSelection(i)
+                return
         old_id = self.GetSelection()
         ed = Editor(self)
         ed.open(filename)

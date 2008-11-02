@@ -86,20 +86,17 @@ class ShowAllFileTreeView(TreeView):
                 #most likely permission denied, thats ok.
                 pass
 
-    def OnItemActivated(self, event):
-        tree = event.GetEventObject()
-        treeitem = tree.GetSelection()
-        filepath = tree.GetItemData(treeitem).GetData()
-        if os.path.isdir(filepath):
-            return
-        self.Parent.Parent.openFile(filepath)
-
     def OnDoubleClick(self, event):
         pos = event.GetPosition()
         item, where = self.HitTest(pos)
         if where & wx.TREE_HITTEST_NOWHERE:
             return
-        self.Toggle(item)
+        filepath = self.GetItemData(item).GetData()
+        if os.path.isdir(filepath):
+            self.Toggle(item)
+        else:
+            self.SelectItem(item)
+            self.Parent.Parent.openFile(filepath)
 
     def OnItemExpanding(self, event):
         node = event.GetItem()
