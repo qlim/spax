@@ -2,7 +2,6 @@ from wax import *
 from spax.widgets.menus import SpaxMenuBar
 from spax.widgets.notebook import SpaxNoteBook
 from spax.widgets.filetreeview import ShowAllFileTreeView
-from spax.utils import regexFromSearchString
 from spax import settings
 
 import re
@@ -40,27 +39,40 @@ class MainFrame(Frame):
         self.findPanel.Hide()
         self.Layout()
 
-    def findNextInCurrentFile(self, value, wrap=True, isRegex=False, matchCase=False):
+    def findNextInCurrentFile(self, pattern, wrap=True, isRegex=False, matchCase=False, backwards=False):
         flags = re.M
         if not matchCase:
             flags |= re.I
-        if isRegex:
-            regex = re.compile(value, flags)
-        else:
-            regex = regexFromSearchString(value, flags)
+        if not isRegex:
+            pattern = re.escape(pattern)
+        regex = re.compile(pattern, flags)
         editor = self.getEditor()
         text = editor.GetText()
         pos = editor.GetCurrentPos()
+        
+        if not backwards:
+            match = regex.search(text, pos, editor.GetTextLength())
+            if wrap and not match:
+                match = regex.search(text, 0, pos)
+        
+        else:
+            iter = re.finditer(pattern, text)
+            match = None
+            try:
+                while True:
+                    next = iter.next()
+                    if match and match.end() < pos and next.end() >= pos:
+                        raise StopIteration()
+                    match = next
+            except StopIteration:
+                pass
 
-        match = regex.search(text, pos, editor.GetTextLength())
-        if wrap and not match:
-            match = regex.search(text, 0, pos)
         if not match:
             return
         editor.SetSelection(match.start(), match.end())
         return match
     
-    def replaceNextInCurrentFile(self, find, replace, wrap=True, isRegex=False, matchCase=False):
+    def replaceNextInCurrentFile(self, find, replace, wrap=True, isRegex=False, matchCase=False, backwards=False):
         match = self.findNextInCurrentFile(find, wrap, isRegex, matchCase)
         if match:
             editor = self.getEditor()
@@ -107,6 +119,8 @@ class MainFrame(Frame):
             try:
                 dialog = PromptSaveDialog(self, choices=choices)
                 save = dialog.ShowModal()
+                if save == 'cancel':
+                    return save
                 if save == 'yes':
                     indexes = dialog.getCheckedFiles()
                     for i in indexes:
@@ -135,7 +149,7 @@ class MainFrame(Frame):
     def OnClose(self, event=None):
         save = self.promptToSave()
         if save != 'cancel':
-                self.Destroy()
+            self.Destroy()
     
     def exit(self, event=None):
         self.Close(1)
@@ -174,12 +188,12 @@ class FindPanel(Panel):
 
         self.isRegexCheckBox2 = CheckBox(self.bottomPanel, 'Regular expression')
         self.matchCaseCheckBox = CheckBox(self.bottomPanel, 'Match case')
-        #self.backwardsCheckBox = CheckBox(self.bottomPanel, 'Backwards')
+        self.backwardsCheckBox = CheckBox(self.bottomPanel, 'Backwards')
         self.wrapCheckBox = CheckBox(self.bottomPanel, 'Wrap search')
         self.wrapCheckBox.SetValue(True)
         self.bottomPanel.AddComponent(self.isRegexCheckBox2, expand='both')
         self.bottomPanel.AddComponent(self.matchCaseCheckBox, expand='both')
-        #self.bottomPanel.AddComponent(self.backwardsCheckBox, expand='both')
+        self.bottomPanel.AddComponent(self.backwardsCheckBox, expand='both')
         self.bottomPanel.AddComponent(self.wrapCheckBox, expand='both')
         self.bottomPanel.Pack()
         self.bottomPanel.Show(self._expanded)
@@ -215,7 +229,8 @@ class FindPanel(Panel):
             self.findTextBox.GetValue(), 
             isRegex=self.isRegex(), 
             wrap=self.wrapCheckBox.GetValue(), 
-            matchCase=self.matchCaseCheckBox.GetValue()
+            matchCase=self.matchCaseCheckBox.GetValue(),
+            backwards=self.backwardsCheckBox.GetValue()
         )
     
     def replaceNextInCurrentFile(self):
@@ -224,7 +239,8 @@ class FindPanel(Panel):
             self.replaceTextBox.GetValue(),
             isRegex=self.isRegex(), 
             wrap=self.wrapCheckBox.GetValue(), 
-            matchCase=self.matchCaseCheckBox.GetValue()
+            matchCase=self.matchCaseCheckBox.GetValue(),
+            backwards=self.backwardsCheckBox.GetValue()
         )
 
     def onClickFind(self, event=None):
