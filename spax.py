@@ -73,7 +73,7 @@ class MainFrame(Frame):
         return match
     
     def replaceNextInCurrentFile(self, find, replace, wrap=True, isRegex=False, matchCase=False, backwards=False):
-        match = self.findNextInCurrentFile(find, wrap, isRegex, matchCase)
+        match = self.findNextInCurrentFile(find, wrap, isRegex, matchCase, backwards)
         if match:
             editor = self.getEditor()
             if isRegex:
