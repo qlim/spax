@@ -25,7 +25,6 @@ class PromptSaveDialog(Dialog):
 
     def OnClickSaveSelected(self, event=None):
         event.Skip()
-        self.selected_files = [] #TODO
         self.EndModal(wx.ID_YES)
 
     def OnClickSaveNone(self, event=None):
@@ -45,7 +44,7 @@ class PromptSaveDialog(Dialog):
         }.get(r, "?")
 
     def Body(self):
-	self.listbox = CheckListBox(self)
+        self.listbox = CheckListBox(self)
         for filename, idx in self.__choices:
             i = self.listbox.Append(filename, idx)
             self.listbox.Check(i, True)
@@ -58,5 +57,5 @@ class PromptSaveDialog(Dialog):
     def OnCharHook(self, event=None):
         if event.GetKeyCode() == keys.esc:
             self.OnClickCancelButton()
-        event.Skip()
+            event.Skip()
 

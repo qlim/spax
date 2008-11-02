@@ -18,7 +18,7 @@ class Editor(StyledTextBox):
         self.changed = False
         self.setHash('')
         self.syntax = spax.syntax.default
-	self.SetFont(FIXED_FONT)
+        self.SetFont(FIXED_FONT)
     
     def updateSyntax(self):
         from spax.settings import FILE_TYPES
@@ -51,7 +51,7 @@ class Editor(StyledTextBox):
             if hasChanged:
                 name += ' *'
             self.Parent.SetPageText(idx, name)
-        self.changed = hasChanged
+            self.changed = hasChanged
 
     def open(self, filename, readonly=False):
         f = open(filename, "rb")
@@ -101,7 +101,7 @@ class Editor(StyledTextBox):
 
     def _get_indent(self, line):
         """ Get the indentation, as a string, from the given line. """
-	return INDENTATION_RE.match(line).group()
+        return INDENTATION_RE.match(line).group()
 
     def handle_autoindent(self):
         prevlineno = self.GetCurrentLineNo() - 1

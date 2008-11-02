@@ -89,17 +89,16 @@ class SpaxNoteBook(NoteBook):
     def OnMiddleClick(self, event=None):
         mousePos = event.GetPosition()
         pageIdx, other = self.HitTest(mousePos)
-	if pageIdx >= 0:
+        if pageIdx >= 0:
             self.closeFile(pageIdx)
     
     def OnLeftDoubleClick(self, event=None):
         mousePos = event.GetPosition()
         pageIdx, other = self.HitTest(mousePos)
-	if pageIdx < 0:
+        if pageIdx < 0:
             self.newFile()
 
     def OnDropFiles(self, x, y, filenames):
-        print filenames, "dropped"
         for filename in filenames:
-            self.open_file(filename)
+            self.openFile(filename)
             
