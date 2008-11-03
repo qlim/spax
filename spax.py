@@ -3,6 +3,7 @@ from spax.widgets.menus import SpaxMenuBar
 from spax.widgets.notebook import SpaxNoteBook
 from spax.widgets.findpanel import FindPanel
 from spax.widgets.filetreeview import ShowAllFileTreeView
+from spax.widgets.shell import SpaxShell
 from spax import settings
 
 import re
@@ -12,12 +13,16 @@ class MainFrame(Frame):
     def Body(self):
         self.SetMenuBar(SpaxMenuBar(self))
         self.splitter = Splitter(self)
+        self.splitter_main = Splitter(self.splitter)
+        self.shell = SpaxShell(self.splitter_main)
+        
         rootdir = getattr(settings, 'TREEVIEW_ROOT', '/')
         if not (os.path.exists(rootdir) and os.path.isdir(rootdir)):
             rootdir = '/'
         self.treeview = ShowAllFileTreeView(self.splitter, rootdir=rootdir, exclude=settings.TREEVIEW_HIDE_FILES)
-        self.notebook = SpaxNoteBook(self.splitter)
-        self.splitter.Split(self.treeview, self.notebook, direction='v', sashposition=200, minsize=100)
+        self.notebook = SpaxNoteBook(self.splitter_main)
+        self.splitter_main.Split(self.notebook, self.shell, direction='h', sashposition=400, minsize=100)
+        self.splitter.Split(self.treeview, self.splitter_main, direction='v', sashposition=200, minsize=100)
         self.AddComponent(self.splitter, expand='both')
         self.findPanel = FindPanel(self, direction='v', expanded=True)
         self.AddComponent(self.findPanel, expand='h')
